@@ -379,16 +379,18 @@ const today = new Date();
 document.getElementById('today-badge').textContent = today.toLocaleDateString('es-PY', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
 // ─── FILE HANDLING ───────────────────────────────────────────────────────────
-const dropArea = document.getElementById('drop-area');
+
 const fileInput = document.getElementById('file-input');
 
-dropArea.addEventListener('click', () => fileInput.click());
-dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.background='rgba(0,200,255,0.12)'; });
-dropArea.addEventListener('dragleave', () => { dropArea.style.background=''; });
-dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.style.background=''; loadFile(e.dataTransfer.files[0]); });
-fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+
+
+
+
+fileInput.addEventListener('change', function() { if (this.files && this.files.length > 0) { loadFile(this.files[0]); } });
 
 function loadFile(file) {
+  document.querySelector(".upload-btn").textContent = "⏳ Procesando...";
+  document.querySelector(".upload-btn").style.opacity = "0.6";
   const reader = new FileReader();
   reader.onload = e => {
     const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
@@ -468,4 +470,14 @@ function clearFilters() {
 }
 
 function sortBy(col) {
-  if (sortCol === col)
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = false; }
+  sortData();
+  renderTable();
+}
+
+function sortData() {
+  filtered.sort((a, b) => {
+    let va = a[sortCol] ?? '';
+    let vb = b[sortCol] ?? '';
+    if (typeof va === 'string') va = va.toL
