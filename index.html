@@ -69,7 +69,7 @@
     border-radius: 10px; cursor: pointer; border: none;
     width: 100%; letter-spacing: 1px;
   }
-  #file-input { display: none; }
+  #file-input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
   /* MAIN */
   #dashboard { display: none; }
@@ -215,7 +215,7 @@
   </div>
   <div class="header-right">
     <div class="date-badge" id="today-badge"></div>
-    <label for="file-input" class="btn secondary" id="reload-btn" style="display:none">↩ Recargar xlsx</label>
+    <button class="btn secondary" id="reload-btn" style="display:none" onclick="document.getElementById('file-input').click()">↩ Recargar xlsx</button>
   </div>
 </header>
 
@@ -224,7 +224,7 @@
     <div class="drop-icon">📂</div>
     <h2>Cargar reporte Bigo Live</h2>
     <p>Seleccioná tu archivo .xlsx de Bigo</p>
-    <label for="file-input" class="upload-btn">📂 Seleccionar archivo</label>
+    <button class="upload-btn" id="upload-btn-main" onclick="document.getElementById('file-input').click()">📂 Seleccionar archivo</button>
     <input type="file" id="file-input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
   </div>
 </div>
@@ -394,8 +394,8 @@ const fileInput = document.getElementById('file-input');
 fileInput.addEventListener('change', function() { if (this.files && this.files.length > 0) { loadFile(this.files[0]); } });
 
 function loadFile(file) {
-  document.querySelector(".upload-btn").textContent = "⏳ Procesando...";
-  document.querySelector(".upload-btn").style.opacity = "0.6";
+  const btn = document.getElementById("upload-btn-main"); if(btn){ btn.textContent = "⏳ Procesando..."; }
+  if(btn){ btn.style.opacity = "0.6"; }
   const reader = new FileReader();
   reader.onload = e => {
     const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
@@ -464,8 +464,4 @@ function applyFilters() {
 
 function clearFilters() {
   document.getElementById('filter-agent').value = '';
-  document.getElementById('filter-hours').value = '';
-  document.getElementById('filter-inactive').value = '';
-  document.getElementById('filter-search').value = '';
-  filtered = [...allData];
-  
+  document.getElementById('filter-hours'
