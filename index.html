@@ -2,7 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#00c8ff">
+<link rel="manifest" href="manifest.json">
 <title>Suits Agency · Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -220,7 +225,7 @@
     <h2>Cargar reporte Bigo Live</h2>
     <p>Seleccioná tu archivo .xlsx de Bigo</p>
     <label for="file-input" class="upload-btn">📂 Seleccionar archivo</label>
-    <input type="file" id="file-input" accept=".xlsx">
+    <input type="file" id="file-input" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
   </div>
 </div>
 
@@ -463,21 +468,4 @@ function clearFilters() {
   document.getElementById('filter-inactive').value = '';
   document.getElementById('filter-search').value = '';
   filtered = [...allData];
-  sortData();
-  page = 1;
-  renderStats();
-  renderTable();
-}
-
-function sortBy(col) {
-  if (sortCol === col) sortAsc = !sortAsc;
-  else { sortCol = col; sortAsc = false; }
-  sortData();
-  renderTable();
-}
-
-function sortData() {
-  filtered.sort((a, b) => {
-    let va = a[sortCol] ?? '';
-    let vb = b[sortCol] ?? '';
-    if (typeof va === 'string') va = va.toL
+  
