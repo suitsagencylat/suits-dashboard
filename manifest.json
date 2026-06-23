@@ -1,0 +1,23 @@
+{
+  "name": "Suits Agency Dashboard",
+  "short_name": "Suits",
+  "description": "Dashboard de emisores Bigo Live para Suits Agency",
+  "start_url": "/suits-dashboard/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#00c8ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f4ca.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f4ca.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+
