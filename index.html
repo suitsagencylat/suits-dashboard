@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Suits Agency · Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --card: #1a1a26;
+    --border: #2a2a3f;
+    --accent: #00c8ff;
+    --accent2: #7b5ea7;
+    --green: #00e676;
+    --orange: #ff9100;
+    --red: #ff3d57;
+    --text: #e8e8f0;
+    --muted: #7070a0;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; color: var(--accent); text-shadow: 0 0 20px rgba(0,200,255,0.5); }
+  .logo span { color: var(--text); }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .date-badge { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; color: var(--muted); }
+  .tab-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 8px; padding: 7px 16px; cursor: pointer; font-size: 0.85rem; transition: all .2s;
+  }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+
+  /* UPLOAD ZONE */
+  #upload-zone {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; gap: 20px;
+  }
+  .drop-area {
+    border: 2px dashed var(--accent); border-radius: 16px;
+    padding: 60px 80px; text-align: center; cursor: pointer;
+    transition: background .2s; background: rgba(0,200,255,0.03);
+  }
+  .drop-area:hover { background: rgba(0,200,255,0.08); }
+  .drop-icon { font-size: 3rem; margin-bottom: 16px; }
+  .drop-area h2 { font-size: 1.3rem; color: var(--accent); margin-bottom: 8px; }
+  .drop-area p { color: var(--muted); font-size: 0.9rem; }
+  #file-input { display: none; }
+
+  /* MAIN */
+  #dashboard { display: none; }
+  .main-content { padding: 20px 24px; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-value.red { color: var(--red); }
+
+  /* FILTERS */
+  .filters-bar {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px;
+  }
+  .filters-bar select, .filters-bar input {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 7px 12px; font-size: 0.85rem; outline: none;
+  }
+  .filters-bar select:focus, .filters-bar input:focus { border-color: var(--accent); }
+  .filter-label { font-size: 0.75rem; color: var(--muted); }
+  .btn {
+    background: var(--accent); color: #000; border: none; border-radius: 8px;
+    padding: 8px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: opacity .2s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn.secondary { background: var(--card); border: 1px solid var(--border); color: var(--text); font-weight: 400; }
+  .btn.danger { background: #2a1020; border: 1px solid var(--red); color: var(--red); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  thead th {
+    background: var(--surface); padding: 10px 12px; text-align: left;
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: .8px;
+    color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap;
+    cursor: pointer; user-select: none;
+  }
+  thead th:hover { color: var(--accent); }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background .1s; }
+  tbody tr:hover { background: rgba(0,200,255,0.04); }
+  tbody td { padding: 9px 12px; vertical-align: middle; white-space: nowrap; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 600;
+  }
+  .badge.green { background: rgba(0,230,118,0.12); color: var(--green); }
+  .badge.orange { background: rgba(255,145,0,0.12); color: var(--orange); }
+  .badge.red { background: rgba(255,61,87,0.12); color: var(--red); }
+  .badge.blue { background: rgba(0,200,255,0.12); color: var(--accent); }
+  .badge.purple { background: rgba(123,94,167,0.15); color: #b39ddb; }
+
+  /* ALERT inactive */
+  .days-badge { font-weight: 700; }
+
+  /* PAGINATION */
+  .pagination { display: flex; align-items: center; gap: 8px; padding: 14px 0; justify-content: flex-end; }
+  .pagination button {
+    background: var(--card); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.82rem;
+  }
+  .pagination button:disabled { opacity: .3; cursor: default; }
+  .pagination button.current { background: var(--accent); color: #000; font-weight: 700; border-color: var(--accent); }
+  .page-info { color: var(--muted); font-size: 0.8rem; }
+
+  /* AGENT VIEW */
+  #agent-view { display: none; }
+  .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .agent-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .agent-card-header {
+    background: linear-gradient(135deg, rgba(0,200,255,0.1), rgba(123,94,167,0.1));
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .agent-name { font-weight: 700; font-size: 1rem; }
+  .agent-count { font-size: 0.8rem; color: var(--muted); }
+  .agent-card-body { padding: 12px; }
+  .agent-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 8px; border-radius: 8px; margin-bottom: 4px; font-size: 0.8rem;
+  }
+  .agent-row:hover { background: rgba(255,255,255,0.04); }
+  .agent-row-name { color: var(--text); max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  .agent-row-meta { color: var(--muted); font-size: 0.74rem; }
+  .agent-metrics { display: flex; gap: 8px; align-items: center; }
+  .copy-btn {
+    background: rgba(0,200,255,0.1); border: 1px solid rgba(0,200,255,0.3);
+    color: var(--accent); border-radius: 6px; padding: 4px 10px; cursor: pointer;
+    font-size: 0.75rem; transition: background .2s;
+  }
+  .copy-btn:hover { background: rgba(0,200,255,0.2); }
+
+  /* MONTH VIEW */
+  #month-view { display: none; }
+  .month-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .month-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+  }
+  .month-card h3 { font-size: 0.85rem; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 1px; }
+  .month-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+  .month-row:last-child { border-bottom: none; }
+  .month-row .val { font-weight: 700; }
+  .month-row .val.green { color: var(--green); }
+  .month-row .val.orange { color: var(--orange); }
+  .month-row .val.red { color: var(--red); }
+  .month-row .val.blue { color: var(--accent); }
+
+  /* NIVEL TABLE */
+  .nivel-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 8px; }
+  .nivel-table th { background: var(--surface); padding: 8px 10px; text-align: left; color: var(--muted); font-size: 0.72rem; text-transform: uppercase; }
+  .nivel-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--green); color: #000;
+    padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 0.85rem;
+    opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+
+  .section-title { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .empty-state { text-align: center; padding: 40px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SUITS<span> AGENCY</span></div>
+  <div id="header-tabs" style="display:none; gap:8px; display:flex">
+    <button class="tab-btn active" onclick="showTab('daily')">📊 Diario</button>
+    <button class="tab-btn" onclick="showTab('agents')">👥 Por Agente</button>
+    <button class="tab-btn" onclick="showTab('month')">📅 Fin de Mes</button>
+  </div>
+  <div class="header-right">
+    <div class="date-badge" id="today-badge"></div>
+    <button class="btn secondary" id="reload-btn" style="display:none" onclick="document.getElementById('file-input').click()">↩ Recargar xlsx</button>
+    <input type="file" id="file-input" accept=".xlsx">
+  </div>
+</header>
+
+<div id="upload-zone">
+  <div class="drop-area" id="drop-area">
+    <div class="drop-icon">📂</div>
+    <h2>Cargar reporte Bigo Live</h2>
+    <p>Arrastrá tu archivo .xlsx aquí o hacé clic para seleccionarlo</p>
+  </div>
+</div>
+
+<div id="dashboard">
+  <!-- DAILY TAB -->
+  <div id="daily-view">
+    <div class="main-content">
+      <div class="stats-row" id="stats-row"></div>
+      <div class="filters-bar">
+        <div>
+          <div class="filter-label">Agente</div>
+          <select id="filter-agent"><option value="">Todos</option></select>
+        </div>
+        <div>
+          <div class="filter-label">Estado horas</div>
+          <select id="filter-hours">
+            <option value="">Todos</option>
+            <option value="ok">✅ Al día (≥44h)</option>
+            <option value="risk">⚠️ En riesgo</option>
+            <option value="low">❌ Crítico (&lt;20h)</option>
+          </select>
+        </div>
+        <div>
+          <div class="filter-label">Inactividad</div>
+          <select id="filter-inactive">
+            <option value="">Todos</option>
+            <option value="3">+3 días sin transmitir</option>
+            <option value="7">+7 días sin transmitir</option>
+          </select>
+        </div>
+        <div>
+          <div class="filter-label">Buscar</div>
+          <input type="text" id="filter-search" placeholder="Nombre o ID...">
+        </div>
+        <button class="btn" onclick="applyFilters()">Filtrar</button>
+        <button class="btn secondary" onclick="clearFilters()">Limpiar</button>
+        <button class="btn secondary" style="margin-left:auto" onclick="exportCSV()">⬇ Exportar CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('ID de BIGO')">ID BIGO ↕</th>
+              <th onclick="sortBy('Nombre de usuario del emisor')">Emisor ↕</th>
+              <th onclick="sortBy('Agente')">Agente ↕</th>
+              <th onclick="sortBy('Transmisión reciente')">Última transmisión ↕</th>
+              <th>Días inactivo</th>
+              <th onclick="sortBy('Duración de transmisiones de este mes (h)')">Horas mes ↕</th>
+              <th>Estado horas</th>
+              <th onclick="sortBy('Ingresos del mes en semillas')">Semillas mes ↕</th>
+              <th>Nivel</th>
+              <th>Nivel estrella</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- AGENTS TAB -->
+  <div id="agent-view">
+    <div class="main-content">
+      <div class="section-title">Resumen por agente — para enviar capturas</div>
+      <div class="agent-grid" id="agent-grid"></div>
+    </div>
+  </div>
+
+  <!-- MONTH TAB -->
+  <div id="month-view">
+    <div class="main-content">
+      <div class="section-title">Cálculos de fin de mes</div>
+      <div class="month-grid" id="month-grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast">✓ Copiado al portapapeles</div>
+
+<script>
+// ─── NIVEL TABLE (de las imágenes) ───────────────────────────────────────────
+const NIVELES = [
+  { nivel:'e',  semillas:2000,    rem_emisor:14,     rem_agente:3.5 },
+  { nivel:'d',  semillas:5000,    rem_emisor:35,     rem_agente:8.75 },
+  { nivel:'c',  semillas:10000,   rem_emisor:74,     rem_agente:18.5 },
+  { nivel:'cE', semillas:20000,   rem_emisor:141,    rem_agente:35.25 },
+  { nivel:'b',  semillas:30000,   rem_emisor:211,    rem_agente:52.75 },
+  { nivel:'a',  semillas:60000,   rem_emisor:422,    rem_agente:105.5 },
+  { nivel:'s1', semillas:100000,  rem_emisor:660,    rem_agente:165 },
+  { nivel:'s2', semillas:150000,  rem_emisor:990,    rem_agente:247.5 },
+  { nivel:'s3', semillas:200000,  rem_emisor:1320,   rem_agente:330 },
+  { nivel:'s4', semillas:250000,  rem_emisor:1650,   rem_agente:412.5 },
+  { nivel:'s5', semillas:300000,  rem_emisor:1980,   rem_agente:495 },
+  { nivel:'s6', semillas:400000,  rem_emisor:2700,   rem_agente:675 },
+  { nivel:'s7', semillas:500000,  rem_emisor:3550,   rem_agente:887.5 },
+  { nivel:'s8', semillas:750000,  rem_emisor:5500,   rem_agente:1375 },
+  { nivel:'s9', semillas:1000000, rem_emisor:6800,   rem_agente:1700 },
+  { nivel:'s10',semillas:1500000, rem_emisor:10400,  rem_agente:2600 },
+  { nivel:'s11',semillas:2000000, rem_emisor:14500,  rem_agente:3625 },
+  { nivel:'s12',semillas:3000000, rem_emisor:22500,  rem_agente:5625 },
+  { nivel:'s13',semillas:4000000, rem_emisor:28300,  rem_agente:7075 },
+  { nivel:'s14',semillas:5000000, rem_emisor:35400,  rem_agente:8850 },
+  { nivel:'s15',semillas:6500000, rem_emisor:46030,  rem_agente:11507.5 },
+  { nivel:'s16',semillas:8000000, rem_emisor:56600,  rem_agente:14150 },
+  { nivel:'s17',semillas:10000000,rem_emisor:72500,  rem_agente:18125 },
+  { nivel:'s18',semillas:15000000,rem_emisor:108800, rem_agente:27200 },
+];
+
+function getNivel(semillas) {
+  let nivel = null;
+  for (let n of NIVELES) {
+    if (semillas >= n.semillas) nivel = n;
+    else break;
+  }
+  return nivel;
+}
+
+function calcPago(row) {
+  const semillas = row['Ingresos del mes en semillas'] || 0;
+  const horas = row['Duración de transmisiones de este mes (h)'] || 0;
+  const nivel = getNivel(semillas);
+  if (!nivel) return { nivel: '-', rem_emisor: 0, rem_agente: 0, status: 'sin nivel' };
+
+  let factor = 1;
+  let status = 'completo';
+  if (horas >= 44) { factor = 1; status = 'completo'; }
+  else if (horas >= 20) { factor = 0.5; status = 'mitad'; }
+  else { factor = 0; status = 'sin pago'; }
+
+  // bono semillas agente
+  let bonus_pct = 0;
+  const nv = nivel.nivel;
+  if (['s13','s14','s15','s16','s17','s18'].includes(nv)) bonus_pct = 0.04;
+  else if (!['d','e'].includes(nv)) bonus_pct = 0.055;
+
+  return {
+    nivel: nivel.nivel,
+    meta_semillas: nivel.semillas,
+    rem_emisor: nivel.rem_emisor * factor,
+    rem_agente: nivel.rem_agente * factor,
+    bono_agente: semillas * bonus_pct * factor,
+    factor, status,
+  };
+}
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let allData = [];
+let filtered = [];
+let sortCol = 'Duración de transmisiones de este mes (h)';
+let sortAsc = false;
+let page = 1;
+const PAGE_SIZE = 50;
+const today = new Date();
+
+document.getElementById('today-badge').textContent = today.toLocaleDateString('es-PY', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ─── FILE HANDLING ───────────────────────────────────────────────────────────
+const dropArea = document.getElementById('drop-area');
+const fileInput = document.getElementById('file-input');
+
+dropArea.addEventListener('click', () => fileInput.click());
+dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.background='rgba(0,200,255,0.12)'; });
+dropArea.addEventListener('dragleave', () => { dropArea.style.background=''; });
+dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.style.background=''; loadFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => loadFile(e.target.files[0]));
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    allData = XLSX.utils.sheet_to_json(ws);
+    // Parse dates
+    allData = allData.map(r => {
+      if (r['Transmisión reciente']) {
+        const d = r['Transmisión reciente'];
+        r._lastStream = d instanceof Date ? d : new Date(d);
+      } else {
+        r._lastStream = null;
+      }
+      r._diasInactivo = r._lastStream ? Math.floor((today - r._lastStream) / 86400000) : 999;
+      return r;
+    });
+    initDashboard();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function initDashboard() {
+  document.getElementById('upload-zone').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  document.getElementById('header-tabs').style.display = 'flex';
+  document.getElementById('reload-btn').style.display = 'inline-block';
+
+  // Populate agent filter
+  const agents = [...new Set(allData.map(r => r['Agente']).filter(Boolean))].sort();
+  const sel = document.getElementById('filter-agent');
+  sel.innerHTML = '<option value="">Todos los agentes</option>';
+  agents.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
+
+  clearFilters();
+  renderAgentView();
+  renderMonthView();
+}
+
+// ─── DAILY VIEW ──────────────────────────────────────────────────────────────
+function applyFilters() {
+  const agent = document.getElementById('filter-agent').value;
+  const hours = document.getElementById('filter-hours').value;
+  const inactive = document.getElementById('filter-inactive').value;
+  const search = document.getElementById('filter-search').value.toLowerCase();
+
+  filtered = allData.filter(r => {
+    if (agent && r['Agente'] !== agent) return false;
+    const h = r['Duración de transmisiones de este mes (h)'] || 0;
+    if (hours === 'ok' && h < 44) return false;
+    if (hours === 'risk' && (h < 20 || h >= 44)) return false;
+    if (hours === 'low' && h >= 20) return false;
+    if (inactive) { const d = parseInt(inactive); if (r._diasInactivo < d) return false; }
+    if (search) {
+      const name = (r['Nombre de usuario del emisor']||'').toLowerCase();
+      const id = String(r['ID de BIGO']||'');
+      if (!name.includes(search) && !id.includes(search)) return false;
+    }
+    return true;
+  });
+
+  sortData();
+  page = 1;
+  renderStats();
+  renderTable();
+}
+
+function clearFilters() {
+  document.getElementById('filter-agent').value = '';
+  document.getElementById('filter-hours').value = '';
+  document.getElementById('filter-inactive').value = '';
+  document.getElementById('filter-search').value = '';
+  filtered = [...allData];
+  sortData();
+  page = 1;
+  renderStats();
+  renderTable();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = false; }
+  sortData();
+  renderTable();
+}
+
+function sortData() {
+  filtered.sort((a, b) => {
+    let va = a[sortCol] ?? '';
+    let vb = b[sortCol] ?? '';
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'st
